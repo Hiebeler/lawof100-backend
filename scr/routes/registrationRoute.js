@@ -13,7 +13,7 @@ function sendMail(to, subject, text) {
         secure: true,
         auth: {
             user: 'emanuel.hiebeler@gmail.com',
-            pass: 'qunduvhholqxgrxx'
+            pass: '********'
         }
     })
 
