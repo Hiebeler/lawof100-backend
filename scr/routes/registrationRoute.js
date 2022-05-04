@@ -3,8 +3,13 @@ const router = express.Router()
 const database = require('../database')
 const bcrypt = require('bcrypt')
 const mailer = require('nodemailer')
+const jwt = require('jsonwebtoken')
 
 const pwStrength = /^(?=.*[A-Za-z])(?=.*\d)[\S]{6,}$/ // mindestens 6 Stellen && eine Zahl && ein Buchstabe
+
+function createToken(id, email, username) {
+    return jwt.sign({ id, email, username }, 'lawof100', { expiresIn: '1y' })
+}
 
 function sendMail(to, subject, text) {
     const transporter = mailer.createTransport({
@@ -13,7 +18,7 @@ function sendMail(to, subject, text) {
         secure: true,
         auth: {
             user: 'emanuel.hiebeler@gmail.com',
-            pass: '********'
+            pass: '***********'
         }
     })
 
@@ -65,7 +70,7 @@ router.post('/register', async (req, res) => {
             }
 
 
-            const code = '0' + Math.random().toString(36).substr(2)
+            const code = Math.floor(100000 + Math.random() * 900000);
             console.log(code);
             bcrypt.genSalt(512, (_err, salt) => {
                 bcrypt.hash(req.body.password1, salt, (_err, enc) => {
@@ -77,7 +82,7 @@ router.post('/register', async (req, res) => {
                         if (err) {
                             return res.status(500).json({err})
                         }
-                        sendMail(req.body.email, 'Email verification', 'Open this link to enable your account: https://test.xyz/verify/' + code)
+                        sendMail(req.body.email, 'Email verification', 'Pleas enter this code in your app ' + code)
                         return res.json({
                             status: 1,
                             header: 'Congrats!',
@@ -88,6 +93,46 @@ router.post('/register', async (req, res) => {
             })
         })
     })
+})
+
+router.post('/login', async (req, res) => {
+    if (!req.body.email || !req.body.password) {
+        return res.json({ message: 'Empty fields!' })
+    } else {
+        database.getConnection((_err, con) => {
+            con.query(`SELECT * FROM user WHERE email = ${con.escape(req.body.email)}`, (err, users) => {
+                if (err) {
+                    con.release()
+                    return res.status(404).json({ err })
+                }
+
+                if (users.length === 0) {
+                    con.release()
+                    return res.json({ message: 'This user does not exist!' })
+                }
+
+                if (users[0].verified === 1) {
+                    bcrypt.compare(req.body.password, users[0].password, (err, isMatch) => {
+                        if (err) {
+                            con.release()
+                            return res.status(500).json({ err })
+                        }
+                        if (!isMatch) {
+                            con.release()
+                            return res.json({ message: 'Wrong password!', wrongpw: true })
+                        } else {
+                            const usertoken = createToken(users[0].id, users[0].email, users[0].username)
+
+                            const answer = { token: usertoken }
+                            return res.json(answer)
+                        }
+                    })
+                } else {
+                    return res.json({ notverified: true })
+                }
+            })
+        })
+    }
 })
 
 router.get('/verify/:code', (req, res) => {
