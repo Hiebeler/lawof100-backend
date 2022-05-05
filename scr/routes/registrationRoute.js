@@ -4,11 +4,13 @@ const database = require('../database')
 const bcrypt = require('bcrypt')
 const mailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
+require('dotenv').config();
+
 
 const pwStrength = /^(?=.*[A-Za-z])(?=.*\d)[\S]{6,}$/ // mindestens 6 Stellen && eine Zahl && ein Buchstabe
 
 function createToken(id, email, username) {
-    return jwt.sign({ id, email, username }, 'lawof100', { expiresIn: '1y' })
+    return jwt.sign({ id, email, username }, process.env.JWT_KEY, { expiresIn: '1y' })
 }
 
 function sendMail(to, subject, text) {
@@ -18,7 +20,7 @@ function sendMail(to, subject, text) {
         secure: true,
         auth: {
             user: 'emanuel.hiebeler@gmail.com',
-            pass: '***********'
+            pass: '********'
         }
     })
 
