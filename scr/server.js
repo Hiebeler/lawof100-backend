@@ -11,6 +11,9 @@ app.use('/user', userRoute)
 const registrationRoute = require('./routes/registrationRoute')
 app.use('/registration', registrationRoute)
 
+const challengeRoute = require('./routes/challengeRoute')
+app.use('/challenge', challengeRoute)
+
 app.listen(process.env.PORT, () => {
     console.log(`Example app listening on port ${process.env.PORT}`)
 })

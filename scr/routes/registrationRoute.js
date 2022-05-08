@@ -20,7 +20,7 @@ function sendMail(to, subject, text) {
         secure: true,
         auth: {
             user: 'emanuel.hiebeler@gmail.com',
-            pass: '********'
+            pass: process.env.EMAIL_PASSWORD
         }
     })
 
