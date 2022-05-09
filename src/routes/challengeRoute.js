@@ -23,7 +23,42 @@ router.post('/createChallenge', auth, (req, res) => {
                 header: "Worked",
                 message: "Added challenge " + req.body.name + " succesfully"
             })
+        })
+    })
+})
 
+router.get("/getAllChallenges", auth, (req, res) => {
+    database.getConnection((_err, con) => {
+        con.query(`SELECT * FROM challenge`, (err, challenge) => {
+            con.release();
+            if (err) {
+                return res.status(500).json({err})
+            }
+            return res.send(challenge);
+        })
+    })
+})
+
+router.get("/getAllCreatedChallenges", auth, (req, res) => {
+    database.getConnection((_err, con) => {
+        con.query(`SELECT * FROM challenge WHERE fk_user_id = ${con.escape(req.user.id)}`, (err, challenge) => {
+            con.release();
+            if (err) {
+                return res.status(500).json({err})
+            }
+            return res.send(challenge);
+        })
+    })
+})
+
+router.get("/getAllAttendedChallenges", auth, (req, res) => {
+    database.getConnection((_err, con) => {
+        con.query(`SELECT * FROM challenge inner join user_attends_challenge uac on challenge.id = uac.fk_challenge_id where uac.fk_user_id = ${con.escape(req.user.id)}`, (err, challenge) => {
+            con.release();
+            if (err) {
+                return res.status(500).json({err})
+            }
+            return res.send(challenge);
         })
     })
 })
