@@ -86,9 +86,25 @@ router.get("/getAllAttendedChallenges", auth, (req, res) => {
     })
 })
 
+router.get("/getEntriesOfChallenge/:challengeId", auth, (req, res) => {
+    database.getConnection((_err, con) => {
+        if (!req.params.challengeId) {
+            con.release();
+            return res.status(500).json("No Challenge id")
+        }
+        con.query(`select day, description, successful, timestamp from entry where fk_user_id = ${con.escape(req.user.id)} and fk_challenge_id = ${con.escape(req.params.challengeId)} order by day asc`, (err, challenge) => {
+            con.release();
+            if (err) {
+                return res.status(500).json({err})
+            }
+            return res.send(challenge);
+        })
+    })
+})
+
 router.post("/joinChallenge", auth, (req, res) => {
     database.getConnection((_err, con) => {
-        if (!req.body.challengeId, !req.body.startDate) {
+        if (!req.body.challengeId || !req.body.startDate) {
             con.release()
             return res.json({header: 'Error', message: 'Empty params!'})
         }
@@ -101,6 +117,27 @@ router.post("/joinChallenge", auth, (req, res) => {
                 status: 1,
                 header: "Worked",
                 message: "Added challenge " + req.body.name + " succesfully"
+            })
+        })
+    })
+})
+
+router.post("/addEntry", auth, (req, res) => {
+    database.getConnection((_err, con) => {
+        if (!req.body.challengeId || !req.body.day || !req.body.description) {
+            con.release()
+            return res.json({header: 'Error', message: 'Empty params!'})
+        }
+
+        con.query(`INSERT INTO entry (fk_user_id, fk_challenge_id, day, description, successful) VAlUES (${req.user.id}, ${con.escape(req.body.challengeId)}, ${con.escape(req.body.day)}, ${con.escape(req.body.description)}, ${con.escape(req.body.successful)})`, (err, _result) => {
+            con.release()
+            if (err) {
+                return res.status(500).json({err})
+            }
+            return res.json({
+                status: 1,
+                header: "Worked",
+                message: "Added entry " + req.body.day + " succesfully"
             })
         })
     })
