@@ -143,4 +143,16 @@ router.post("/addEntry", auth, (req, res) => {
     })
 })
 
+router.get("/getAllEntries", auth, (req, res) => {
+    database.getConnection((_err, con) => {
+        con.query(`select e.day, e.description, c.name as challenge_name, u.username from entry e inner join challenge c on c.id = e.fk_challenge_id inner join user u on u.id = c.fk_user_id order by e.timestamp desc`, (err, challenge) => {
+            con.release();
+            if (err) {
+                return res.status(500).json({err})
+            }
+            return res.send(challenge);
+        })
+    })
+})
+
 module.exports = router
