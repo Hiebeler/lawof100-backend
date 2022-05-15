@@ -47,12 +47,9 @@ router.get("/getAllChallenges", auth, (req, res) => {
 
 router.get("/getAllChallengesWithJoinedField", auth, (req, res) => {
     database.getConnection((_err, con) => {
-        con.query(`SELECT challenge.id, challenge.name, challenge.private, challenge.startdate, CASE 
-        WHEN uac.fk_challenge_id IS null or uac.fk_user_id != ${con.escape(req.user.id)} THEN 0 
-        ELSE 1 
-    END AS joined
-    FROM challenge
-    left join user_attends_challenge uac ON challenge.id = uac.fk_challenge_id group by challenge.id order by startdate asc`, (err, challenge) => {
+        con.query(`SELECT challenge.id, challenge.name, challenge.private, challenge.startdate,uac.fk_user_id  FROM challenge 
+	left join (select * from user_attends_challenge uac where fk_user_id = ${con.escape(req.user.id)}) uac on challenge.id = uac.fk_challenge_id
+	where private = 0 order by startdate asc`, (err, challenge) => {
             con.release();
             if (err) {
                 return res.status(500).json({err})
@@ -145,7 +142,7 @@ router.post("/addEntry", auth, (req, res) => {
 
 router.get("/getAllEntries", auth, (req, res) => {
     database.getConnection((_err, con) => {
-        con.query(`select e.day, e.description, c.name as challenge_name, u.username from entry e inner join challenge c on c.id = e.fk_challenge_id inner join user u on u.id = c.fk_user_id order by e.timestamp desc`, (err, challenge) => {
+        con.query(`select e.day, e.description, e.successful, c.name as challenge_name, u.username from entry e inner join challenge c on c.id = e.fk_challenge_id inner join user u on u.id = c.fk_user_id order by e.timestamp desc`, (err, challenge) => {
             con.release();
             if (err) {
                 return res.status(500).json({err})
