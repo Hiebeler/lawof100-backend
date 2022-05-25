@@ -13,7 +13,7 @@ router.post('/createChallenge', auth, (req, res) => {
         if (!req.body.private) {
             req.body.private = false;
         }
-        con.query(`INSERT INTO challenge (fk_user_id, name, private, startdate) VAlUES (${req.user.id}, ${con.escape(req.body.name)}, ${req.body.private}, ${con.escape(req.body.startDate)})`, (err, _result) => {
+        con.query(`INSERT INTO challenge (fk_user_id, name, private, startdate, description) VAlUES (${req.user.id}, ${con.escape(req.body.name)}, ${req.body.private}, ${con.escape(req.body.startDate)}, ${con.escape(req.body.description)})`, (err, _result) => {
             if (err) {
                 return res.status(500).json({err})
             }
@@ -24,9 +24,7 @@ router.post('/createChallenge', auth, (req, res) => {
                     return res.status(500).json({err})
                 }
                 return res.json({
-                    status: 1,
-                    header: "Worked",
-                    message: "Added challenge " + req.body.name + " succesfully"
+                    status: 1, header: "Worked", message: "Added challenge " + req.body.name + " succesfully"
                 })
             })
         })
@@ -59,21 +57,29 @@ router.get("/getAllChallengesWithJoinedField", auth, (req, res) => {
     })
 })
 
-router.get("/getAllCreatedChallenges", auth, (req, res) => {
+router.get("/getAllChallengesFinishedOrInProgress/:getFinished", auth, (req, res) => {
     database.getConnection((_err, con) => {
-        con.query(`SELECT * FROM challenge WHERE fk_user_id = ${con.escape(req.user.id)}`, (err, challenge) => {
+        if (!req.params.getFinished) {
+            con.release()
+            return res.json({header: 'Error', message: 'Empty fields!'})
+        }
+        let getFinishedOrInProgress = ">";
+        if (JSON.parse(req.params.getFinished) === true) {
+            getFinishedOrInProgress = "<";
+        }
+        con.query(`select * from challenge c inner join user_attends_challenge uac on uac.fk_challenge_id = c.id where uac.fk_user_id = ${con.escape(req.user.id)} and (c.startdate + 100) ${getFinishedOrInProgress} curdate()`, (err, challenges) => {
             con.release();
             if (err) {
                 return res.status(500).json({err})
             }
-            return res.send(challenge);
+            return res.send(challenges);
         })
     })
 })
 
-router.get("/getAllAttendedChallenges", auth, (req, res) => {
+router.get("/getAllAttendingChallenges", auth, (req, res) => {
     database.getConnection((_err, con) => {
-        con.query(`SELECT * FROM challenge inner join user_attends_challenge uac on challenge.id = uac.fk_challenge_id where uac.fk_user_id = ${con.escape(req.user.id)}`, (err, challenge) => {
+        con.query(`SELECT * FROM challenge c inner join user_attends_challenge uac on c.id = uac.fk_challenge_id where uac.fk_user_id = ${con.escape(req.user.id)} and (c.startdate + 100) > curdate()`, (err, challenge) => {
             con.release();
             if (err) {
                 return res.status(500).json({err})
@@ -111,9 +117,7 @@ router.post("/joinChallenge", auth, (req, res) => {
                 return res.status(500).json({err})
             }
             return res.json({
-                status: 1,
-                header: "Worked",
-                message: "Added challenge " + req.body.name + " succesfully"
+                status: 1, header: "Worked", message: "Added challenge " + req.body.name + " succesfully"
             })
         })
     })
@@ -121,22 +125,39 @@ router.post("/joinChallenge", auth, (req, res) => {
 
 router.post("/addEntry", auth, (req, res) => {
     database.getConnection((_err, con) => {
-        if (!req.body.challengeId || !req.body.day || !req.body.description) {
+        if (!req.body.challengeId || !req.body.day) {
             con.release()
             return res.json({header: 'Error', message: 'Empty params!'})
         }
 
-        con.query(`INSERT INTO entry (fk_user_id, fk_challenge_id, day, description, successful) VAlUES (${req.user.id}, ${con.escape(req.body.challengeId)}, ${con.escape(req.body.day)}, ${con.escape(req.body.description)}, ${con.escape(req.body.successful)})`, (err, _result) => {
-            con.release()
+        con.query(`select * from entry where fk_challenge_id = ${con.escape(req.body.challengeId)} and day = ${con.escape(req.body.day)}`, (err, entries) => {
             if (err) {
                 return res.status(500).json({err})
             }
-            return res.json({
-                status: 1,
-                header: "Worked",
-                message: "Added entry " + req.body.day + " succesfully"
-            })
+            if (entries.length === 0) {
+                con.query(`INSERT INTO entry (fk_user_id, fk_challenge_id, day, description, successful) VAlUES (${req.user.id}, ${con.escape(req.body.challengeId)}, ${con.escape(req.body.day)}, ${con.escape(req.body.description)}, ${con.escape(req.body.successful)})`, (err, _result) => {
+                    con.release()
+                    if (err) {
+                        return res.status(500).json({err})
+                    }
+                    return res.json({
+                        status: 1, header: "Worked", message: "Added entry " + req.body.day + " succesfully"
+                    })
+                })
+            } else {
+                con.query(`update entry set description = ${con.escape(req.body.description)}, successful = ${con.escape(req.body.successful)} where fk_challenge_id = ${con.escape(req.body.challengeId)} and day = ${con.escape(req.body.day)} and fk_user_id = ${req.user.id}`, (err, _result) => {
+                    con.release()
+                    if (err) {
+                        return res.status(500).json({err})
+                    }
+                    return res.json({
+                        status: 1, header: "Worked", message: "Added entry " + req.body.day + " succesfully"
+                    })
+                })
+            }
         })
+
+
     })
 })
 
