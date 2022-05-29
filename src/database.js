@@ -1,8 +1,8 @@
 const mariadb = require('mariadb/callback')
 
 const pool = mariadb.createPool({
-    host: 'localhost',
-    port: 3310,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
     user: 'root',
     password: '',
     database: 'law_of_100',
