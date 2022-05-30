@@ -67,7 +67,7 @@ router.get("/getAllChallengesFinishedOrInProgress/:getFinished", auth, (req, res
         if (JSON.parse(req.params.getFinished) === true) {
             getFinishedOrInProgress = "<";
         }
-        con.query(`select * from challenge c inner join user_attends_challenge uac on uac.fk_challenge_id = c.id where uac.fk_user_id = ${con.escape(req.user.id)} and (c.startdate + 100) ${getFinishedOrInProgress} curdate()`, (err, challenges) => {
+        con.query(`select c.id, c.fk_user_id, c.private, c.name, c.startdate, c.description, uac.join_date from challenge c inner join user_attends_challenge uac on uac.fk_challenge_id = c.id where uac.fk_user_id = ${con.escape(req.user.id)} and (c.startdate + 100) ${getFinishedOrInProgress} curdate()`, (err, challenges) => {
             con.release();
             if (err) {
                 return res.status(500).json({err})
@@ -79,7 +79,7 @@ router.get("/getAllChallengesFinishedOrInProgress/:getFinished", auth, (req, res
 
 router.get("/getAllAttendingChallenges", auth, (req, res) => {
     database.getConnection((_err, con) => {
-        con.query(`SELECT * FROM challenge c inner join user_attends_challenge uac on c.id = uac.fk_challenge_id where uac.fk_user_id = ${con.escape(req.user.id)} and (c.startdate + 100) > curdate()`, (err, challenge) => {
+        con.query(`SELECT c.id, c.fk_user_id, c.private, c.name, c.startdate, c.description, uac.join_date FROM challenge c inner join user_attends_challenge uac on c.id = uac.fk_challenge_id where uac.fk_user_id = ${con.escape(req.user.id)} and (c.startdate + 100) > curdate()`, (err, challenge) => {
             con.release();
             if (err) {
                 return res.status(500).json({err})
