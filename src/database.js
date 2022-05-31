@@ -6,7 +6,7 @@ const pool = mariadb.createPool({
     user: 'user',
     password: 'AUT-1251',
     database: 'law_of_100',
-    connectionLimit: 800,
+    connectionLimit: 150,
     charset: 'utf8mb4',
     collation: 'utf8mb4_general_ci',
     supportBigNumbers: true,
